@@ -98,7 +98,32 @@ def scraping(URL):
     df = pd.DataFrame(index=[],columns=[])
     df['URL'] = urls
     df['NAME'] = names
-    return df
+    
+    URL = df['URL'].to_list()
+    review_count = []
+    review_rate = []
+    print(URL)
+
+    for a in URL:
+        try:
+            browser.get(a)
+            review_rate_element = browser.find_element_by_xpath('//*[@id="main-content"]/div[3]/div/div[4]/div[3]/div[1]/div[2]/div[2]/div[1]/div[1]')
+            review_rate.append(review_rate_element.text)
+
+            review_counts_element = browser.find_element_by_xpath('//*[@id="main-content"]/div[3]/div/div[4]/div[3]/div[1]/div[2]/div[2]/div[1]/div[3]')
+            review_counts_1 = review_counts_element.text.replace('(','')
+            review_counts_2 = review_counts_1.replace(')','')
+            review_count.append(review_counts_2)
+        except NoSuchElementException:
+            review_rate.append('0')
+            review_count.append('0')
+    review_rate_1 = [x for x in review_rate if x != '配達予定時間と配送手数料を表示します。\nお届け先の住所を入力してください']
+    print(review_rate_1)
+    print(review_count)
+
+    df['Revie_rate'] = review_rate
+    df['Review_count'] = review_count
+    
 
 selected_url = st.text_input(
     label = 'URLを入力して下さい'
