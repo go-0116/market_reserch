@@ -15,6 +15,7 @@ import chromedriver_binary
 
 chrome_options = Options()
 chrome_options.add_argument("--headless", )
+chrome_options.add_argument("--no-sandbox")
 
 def scraping(URL):
     browser = webdriver.Chrome(options=chrome_options)
@@ -52,13 +53,13 @@ def scraping(URL):
             popular_element = browser.find_element_by_xpath('//*[@id="main-content"]/div/div[3]/div/div/div[1]/div/div[1]/div[2]/label[2]')
             popular_element.click()  #最も人気の料理クリック 
 
-            for a in range(9):
+            for a in range(2):
                 browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 more_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div/div/div/div/button')))
                 more_element.click() #さらに表示クリック
                 
 
-            while i < 800 :
+            while i < 10 :
                 url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path_3)))
                 urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
                 name_element = browser.find_element_by_xpath(name_path).text
@@ -73,7 +74,7 @@ def scraping(URL):
 
     elif is_selected_popular_sorted:
         try:
-            while i < 800 :
+            while i < 10 :
                 url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path)))
                 urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
                 name_element = browser.find_element_by_xpath(name_path).text
@@ -83,7 +84,7 @@ def scraping(URL):
                 name_path = '//*[@id="main-content"]/div/div/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'
                         
         except NoSuchElementException:
-            while i < 800 :
+            while i < 10 :
                 url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path_2)))
                 urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
                 name_element = browser.find_element_by_xpath(name_path).text
@@ -123,11 +124,11 @@ def scraping(URL):
 
     df['Revie_rate'] = review_rate
     df['Review_count'] = review_count
+    return df
+
     
 
-selected_url = st.text_input(
-    label = 'URLを入力して下さい'
-)
+
 
 
 def filedownload(df):
@@ -136,8 +137,79 @@ def filedownload(df):
     href = f'<a href="data:file/csv;base64,{b64}" download="ranking.csv">Download CSV File</a>'
     return href
 
+selected_url_1 = st.text_input(
+    label = '1. URLを入力して下さい'
+)
+selected_name_1 = st.text_input(
+    label = '1. 地域名を入力して下さい'
+)
+st.write('----------------------------------------------')
+selected_url_2 = st.text_input(
+    label = '2. URLを入力して下さい'
+)
+selected_name_2 = st.text_input(
+    label = '2. 地域名を入力して下さい'
+)
+st.write('----------------------------------------------')
+selected_url_3 = st.text_input(
+    label = '3. URLを入力して下さい'
+)
+selected_name_3 = st.text_input(
+    label = '3. 地域名を入力して下さい'
+)
+st.write('----------------------------------------------')
+selected_url_4 = st.text_input(
+    label = '4. URLを入力して下さい'
+)
+selected_name_4 = st.text_input(
+    label = '4. 地域名を入力して下さい'
+)
+st.write('----------------------------------------------')
+selected_url_5 = st.text_input(
+    label = '5. URLを入力して下さい'
+)
+selected_name_5 = st.text_input(
+    label = '5. 地域名を入力して下さい'
+)
+selected_url = {selected_url_1:selected_name_2,selected_url_2:selected_name_2,selected_url_3:selected_name_3,selected_url_4:selected_name_4,selected_url_5:selected_name_5}
+
+
 if st.button('適用'):
-    df1 = scraping(selected_url)
-    st.markdown(filedownload(df1), unsafe_allow_html=True)
+    st.write('----------------------------------------------')
+    if len (selected_url_1 ) > 0 or len(selected_name_1) > 0:
+        df1 = scraping(selected_url_1)
+        st.write(selected_name_1 + 'のダウンロードはこちら↓') 
+        st.markdown(filedownload(df1), unsafe_allow_html=True)
+    else:
+        st.write('1. URL・地域名を入力して下さい')
+    st.write('----------------------------------------------')
+
+    if len (selected_url_2 ) > 0 or len(selected_name_2) > 0:
+        df2 = scraping(selected_url_2)
+        st.write(selected_name_2 + 'のダウンロードはこちら↓') 
+        st.markdown(filedownload(df2), unsafe_allow_html=True)
+    else:
+        st.write('2. URL・地域名を入力して下さい')
+    st.write('----------------------------------------------')
+    if len (selected_url_3 ) > 0 or len(selected_name_3) > 0:
+        df3 = scraping(selected_url_3)
+        st.write(selected_name_3 + 'のダウンロードはこちら↓') 
+        st.markdown(filedownload(df3), unsafe_allow_html=True)
+    else:
+        st.write('3. URL・地域名を入力して下さい')
+    st.write('----------------------------------------------')
+    if len (selected_url_4 ) > 0 or len(selected_name_4) > 0:
+        df4 = scraping(selected_url_4)
+        st.write(selected_name_4 + 'のダウンロードはこちら↓') 
+        st.markdown(filedownload(df4), unsafe_allow_html=True)
+    else:
+        st.write('4. URL・地域名を入力して下さい')
+    st.write('----------------------------------------------')
+    if len (selected_url_5 ) > 0 or len(selected_name_5) > 0:
+        df5 = scraping(selected_url_5)
+        st.write(selected_name_5 + 'のダウンロードはこちら↓') 
+        st.markdown(filedownload(df5), unsafe_allow_html=True)
+    else:
+        st.write('5. URL・地域名を入力して下さい')
 else:
     st.write('URL入力後適用を押してください')
