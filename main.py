@@ -72,7 +72,6 @@ def scraping(URL):
         except NoSuchElementException:
             review_rate.append('0')
             review_count.append('0')
-    review_rate_1 = [x for x in review_rate if x != '配達予定時間と配送手数料を表示します。\nお届け先の住所を入力してください']
 
     df['Revie_rate'] = review_rate
     df['Review_count'] = review_count
