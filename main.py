@@ -3,7 +3,7 @@ from pandas.core.frame import DataFrame
 from selenium import webdriver
 from selenium.webdriver import Chrome
 from time import sleep
-from selenium.common.exceptions import NoSuchElementException
+from selenium.common.exceptions import NoSuchElementException, TimeoutException
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -34,32 +34,29 @@ def scraping(URL):
         popular_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'/html/body/div[1]/div/main/div/div[3]/div[1]/div[2]/div[1]/div[2]/div[2]/div[1]/div/input[2]')))
         #if not popular_element.is_selected():   
         popular_element.find_element_by_xpath("following-sibling::label").click()  #最も人気の料理クリック
-
-        for a in range(9):
-                browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-                more_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div/div/div/div/button')))
-                more_element.click() #さらに表示クリック
-
     except Exception as e:
         print(e)
     else:
         is_selected_popular_sorted = True
+    
         
 
     if not is_selected_popular_sorted:
-        try:
-            rearrange_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div/div[3]/div/div/div[1]/div/div[1]/div')))
-            rearrange_element.click()
-            popular_element = browser.find_element_by_xpath('//*[@id="main-content"]/div/div[3]/div/div/div[1]/div/div[1]/div[2]/label[2]')
-            popular_element.click()  #最も人気の料理クリック 
+        rearrange_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div/div[3]/div/div/div[1]/div/div[1]/div')))
+        rearrange_element.click()
+        popular_element = browser.find_element_by_xpath('//*[@id="main-content"]/div/div[3]/div/div/div[1]/div/div[1]/div[2]/label[2]')
+        popular_element.click()  #最も人気の料理クリック 
 
-            for a in range(2):
+        try:
+            for a in range(9):
                 browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
                 more_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div/div/div/div/button')))
                 more_element.click() #さらに表示クリック
+        except TimeoutException:
+            print('e')
                 
-
-            while i < 10 :
+        try:
+            while i < 800 :
                 url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path_3)))
                 urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
                 name_element = browser.find_element_by_xpath(name_path).text
@@ -74,7 +71,15 @@ def scraping(URL):
 
     elif is_selected_popular_sorted:
         try:
-            while i < 10 :
+            for a in range(9):
+                browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
+                more_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div/div/div/div/button')))
+                more_element.click() #さらに表示クリック
+        except TimeoutException:
+            print('e')
+            
+        try:
+            while i < 800 :
                 url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path)))
                 urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
                 name_element = browser.find_element_by_xpath(name_path).text
@@ -84,7 +89,7 @@ def scraping(URL):
                 name_path = '//*[@id="main-content"]/div/div/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'
                         
         except NoSuchElementException:
-            while i < 10 :
+            while i < 800 :
                 url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path_2)))
                 urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
                 name_element = browser.find_element_by_xpath(name_path).text
@@ -125,7 +130,7 @@ def scraping(URL):
     df['Revie_rate'] = review_rate
     df['Review_count'] = review_count
 
-    df_rm = df.index[df.NAME.str.contains(
+    df_rm = df.index[df.NAME.astype(str).str.contains(
     "マクドナルド|モスバーガー|バーガーキング|ウェンディーズ|ロッテリア|フレッシュネスバーガー|ファーストキッチン|ケンタッキー|吉野家|松屋|すき家|なか卯|ガスト|デニーズ|ロイヤルホスト|ローソン|ほっともっと|ココス|スターバックス|幸楽苑|スシロー|ピザハット|ドミノピザ|ピザーラ|ほっかほっか亭|ジョナサン|サブウェイ|いきなりステーキ|丼丸|大漁丼家|魚丼|てんや",na=False
     )]
     df = df.drop(df_rm)
