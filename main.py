@@ -21,12 +21,11 @@ def scraping(URL):
     browser = webdriver.Chrome(options=chrome_options)
     url = URL
     browser.get(url)
+    
 
     urls = []
     names = []
-    i = 2
-    url_path = '//*[@id="main-content"]/div/div/div[2]/div/div[2]/div[' + str(i) + ']/div'
-    url_path_2 = '//*[@id="main-content"]/div/div/div[2]/div/div[4]/div[' + str(i) + ']/div'
+    i = 3
     url_path_3 = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
     name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'
     
@@ -42,15 +41,18 @@ def scraping(URL):
         while i < 800 :
             url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path_3)))
             urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
+            print(url_element.find_element_by_tag_name("a").get_attribute("href"))
             name_element = browser.find_element_by_xpath(name_path).text
             names.append(name_element)
-            name_path = '//*[@id="main-content"]/div/div/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'
+            print(name_element)
             i += 1
             url_path_3 = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
             name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'
     except Exception as e:
         print('e')
-        
+    
+
+    urls.remove('https://www.ubereats.com/jp/taco-bout-awkward')
     df = pd.DataFrame(index=[],columns=[])
     df['URL'] = urls
     df['NAME'] = names
@@ -60,18 +62,27 @@ def scraping(URL):
     review_rate = []
 
     for a in URL:
+        browser.get(a)
         try:
-            browser.get(a)
-            review_rate_element = browser.find_element_by_xpath('//*[@id="main-content"]/div[3]/div/div[4]/div[3]/div[1]/div[2]/div[2]/div[1]/div[1]')
-            review_rate.append(review_rate_element.text)
-
-            review_counts_element = browser.find_element_by_xpath('//*[@id="main-content"]/div[3]/div/div[4]/div[3]/div[1]/div[2]/div[2]/div[1]/div[3]')
+            review_rate_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div[3]/div/div[4]/div[3]/div[1]/div[2]/div[2]/div[1]/div[3]')))
+            review_counts_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div[3]/div/div[4]/div[3]/div[1]/div[2]/div[2]/div[1]/div[5]')))
             review_counts_1 = review_counts_element.text.replace('(','')
             review_counts_2 = review_counts_1.replace(')','')
+            judge =1
+            
+
+        except TimeoutException:
+            judge =2
+
+        if judge == 1 :
+            review_rate.append(review_rate_element.text)
             review_count.append(review_counts_2)
-        except NoSuchElementException:
+            print(review_rate_element.text)
+            print(review_counts_2)
+        else:
             review_rate.append('0')
             review_count.append('0')
+            print('nothing')
 
     df['Revie_rate'] = review_rate
     df['Review_count'] = review_count
