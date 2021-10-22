@@ -59,38 +59,52 @@ def scraping(URL):
     df['NAME'] = names
     
     URL = df['URL'].to_list()
-    review_count = []
-    review_rate = []
+    review_counts = []
+    review_rates = []
+
+    def is_number(text):
+        if not text:
+            return False
+
+        if text.isdecimal():
+            return True
+        else:
+            try:
+                float(text)
+                return True
+            except ValueError:
+                return False
 
     for a in URL:
         browser.get(a)
-        try:
-            review_rate_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located(Recommendation_for_you.reviewrate_normal))
-            review_rate_1 = review_rate_element.text
-            print(review_rate_1)
-            if '配送手数料' in review_rate_1:
-                review_rate_element = WebDriverWait(browser, 10).until(EC.presence_of_all_elements_located(Recommendation_for_you.reviewrate_delivery_fee))
-                review_counts_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_delivery_fee))
-                review_counts_1 = review_counts_element.text.replace('(','')
-                review_counts_2 = review_counts_1.replace(')','')
-                judge =1
-            else:
-                review_counts_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_noraml))
-                review_counts_1 = review_counts_element.text.replace('(','')
-                review_counts_2 = review_counts_1.replace(')','')
-                judge =1
-        except TimeoutException:
-            judge =2
-
-        if judge == 1 :
-            review_rate_2 = review_rate_element[0].text
-            review_rate.append(review_rate_2)
-            review_count.append(review_counts_2)
-            print(review_rate_2)
-            print(review_counts_2)
-        else:
-            review_rate.append('0')
-            review_count.append('0')
+        sleep(5)
+        for review_xpath in Recommendation_for_you.top_review_xpath:
+            count = 3
+            try:
+                rate_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
+                for b in range(3):
+                    if is_number(rate_element.text):
+                        count += 2 
+                        count_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
+                        judge = 1
+                        break
+                    else:
+                        count += 2
+                        rate_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
+                break
+            except Exception as t:
+                judge = 2
+                
+        if judge == 1 :    
+            review_rate=rate_element.text
+            print(review_rate)          
+            review_count = count_element.text.replace("(", "").replace(")", "")
+            print(review_count)
+            review_rates.append(review_rate)
+            review_counts.append(review_count)
+        else :
+            review_rates.append(0)
+            review_counts.append(0)
             print('nothing')
 
     df['Revie_rate'] = review_rate
