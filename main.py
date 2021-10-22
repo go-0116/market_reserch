@@ -14,6 +14,7 @@ import base64
 import chromedriver_binary
 import requests
 import traceback
+from locator import Recommendation_for_you
 
 chrome_options = Options()
 #chrome_options.add_argument("--headless", )
@@ -26,28 +27,28 @@ def scraping(URL):
     
     urls = []
     names = []
-    i = 11
-    url_path_3 = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
-    name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'    
-                #  //*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[7]/div/a/h3
-                #    //*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[7]/div/a  
+    i = 17
+    url_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
+    name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'     
+    #//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[17]/div/a/h3
+    #//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[5]/div/a
     try:
         for a in range(10):
             browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            more_element = WebDriverWait(browser, 5).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div/div/div/div/button')))
-            more_element.click() #さらに表示クリック
+            show_more_element = WebDriverWait(browser, 5).until(EC.presence_of_element_located(Recommendation_for_you.show_more))
+            show_more_element.click() #さらに表示クリック
     except TimeoutException:
         print('a')
     try:
-        while i < 811 :
-            url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path_3)))
+        while i < 810 :#i=11から800個がmax
+            url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path)))
             urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
             print(url_element.find_element_by_tag_name("a").get_attribute("href"))
             name_element = browser.find_element_by_xpath(name_path).text
             names.append(name_element)
             print(name_element)
             i += 1
-            url_path_3 = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
+            url_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
             name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'
     except Exception as e:
         print('e')
@@ -66,22 +67,33 @@ def scraping(URL):
     for a in URL:
         browser.get(a)
         try:
-            review_rate_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div[3]/div/div[3]/div[3]/div[1]/div[2]/div[2]/div[1]/div[3]')))
-            review_rate_1 = review_rate_element.text
-            print(review_rate_1)
-            if '配送手数料' in review_rate_1:
-                review_rate_element = WebDriverWait(browser, 10).until(EC.presence_of_all_elements_located((By.XPATH,'//*[@id="main-content"]/div[3]/div/div[3]/div[3]/div[1]/div[2]/div[2]/div[1]/div[7]')))
-                review_counts_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div[3]/div/div[3]/div[3]/div[1]/div[2]/div[2]/div[1]/div[9]')))
-                review_counts_1 = review_counts_element.text.replace('(','')
-                review_counts_2 = review_counts_1.replace(')','')
-                judge =1
-            else:
-                review_counts_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,'//*[@id="main-content"]/div[3]/div/div[3]/div[3]/div[1]/div[2]/div[2]/div[1]/div[5]')))
-                review_counts_1 = review_counts_element.text.replace('(','')
-                review_counts_2 = review_counts_1.replace(')','')
-                judge =1
+            review_rate_element = WebDriverWait(browser, 10).until(EC.presence_of_all_elements_located(Recommendation_for_you.reviewrate_delivery_fee))
+            review_counts_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_delivery_fee))
+            review_counts_1 = review_counts_element.text.replace('(','')
+            review_counts_2 = review_counts_1.replace(')','')
+            judge =1
         except TimeoutException:
             judge =2
+        
+        if judge ==2:
+            try:
+                review_rate_element = WebDriverWait(browser, 5).until(EC.presence_of_all_elements_located(Recommendation_for_you.reviewrate_km))
+                review_counts_element = WebDriverWait(browser, 5).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_km))
+                review_counts_1 = review_counts_element.text.replace('(','')
+                review_counts_2 = review_counts_1.replace(')','')
+                judge =1
+            except TimeoutException:
+                judge =2
+        
+        if judge ==2:
+            try:
+                review_rate_element = WebDriverWait(browser, 5).until(EC.presence_of_all_elements_located(Recommendation_for_you.reviewrate_normal))
+                review_counts_element = WebDriverWait(browser, 5).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_noraml))
+                review_counts_1 = review_counts_element.text.replace('(','')
+                review_counts_2 = review_counts_1.replace(')','')
+                judge =1
+            except TimeoutException:
+                judge =2
 
         if judge == 1 :
             review_rate_2 = review_rate_element[0].text
@@ -150,12 +162,13 @@ selected_name_5 = st.text_input(
 )
 selected_url = {selected_url_1:selected_name_2,selected_url_2:selected_name_2,selected_url_3:selected_name_3,selected_url_4:selected_name_4,selected_url_5:selected_name_5}
 
+hook_url = 'https://hooks.slack.com/services/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'
 
 if st.button('適用'):
     data_0 = {
         'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "開始", "icon_emoji": "✅"}'
         }
-    response = requests.post('https://hooks.slack.com/services/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', data=data_0)
+    response = requests.post(hook_url, data=data_0)
 
     st.write('----------------------------------------------')
     if len (selected_url_1 ) > 0 or len(selected_name_1) > 0:
@@ -165,15 +178,15 @@ if st.button('適用'):
         except Exception as f:
             error_message = traceback.print_exc()
             data = {
-            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生", "icon_emoji": "💥"}'
+            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生(eroorcode:f)", "icon_emoji": "💥"}'
             }
-            response = requests.post('https://hooks.slack.com/services/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', data=data)
+            response = requests.post(hook_url, data=data)
         st.write(selected_name_1 + 'のダウンロードはこちら↓') 
         st.markdown(filedownload(df1), unsafe_allow_html=True)
         data_1 = {
             'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "終了", "icon_emoji": "✅"}'
             }
-        response = requests.post('https://hooks.slack.com/services/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', data=data_1)
+        response = requests.post(hook_url, data=data_1)
     else:
         st.write('1. URL・地域名を入力して下さい')
 
@@ -186,15 +199,15 @@ if st.button('適用'):
         except Exception as f:
             error_message = traceback.print_exc()
             data = {
-            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生", "icon_emoji": "💥"}'
+            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生(eroorcode:f)", "icon_emoji": "💥"}'
             }
-            response = requests.post('https://hooks.slack.com/services/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', data=data)
+            response = requests.post(hook_url, data=data)
         st.write(selected_name_2 + 'のダウンロードはこちら↓') 
         st.markdown(filedownload(df2), unsafe_allow_html=True)
         data_1 = {
             'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "終了", "icon_emoji": "✅"}'
             }
-        response = requests.post('https://hooks.slack.com/services/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', data=data_1)
+        response = requests.post(hook_url, data=data_1)
     else:
         st.write('2. URL・地域名を入力して下さい')
     st.write('----------------------------------------------')
@@ -205,15 +218,15 @@ if st.button('適用'):
         except Exception as f:
             error_message = traceback.print_exc()
             data = {
-            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生", "icon_emoji": "💥"}'
+            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生(eroorcode:f)", "icon_emoji": "💥"}'
             }
-            response = requests.post('https://hooks.slack.com/services/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', data=data)
+            response = requests.post(hook_url, data=data)
         st.write(selected_name_3 + 'のダウンロードはこちら↓') 
         st.markdown(filedownload(df3, unsafe_allow_html=True))
         data_1 = {
             'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "終了", "icon_emoji": "✅"}'
             }
-        response = requests.post('https://hooks.slack.com/services/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', data=data_1)
+        response = requests.post(hook_url, data=data_1)
     else:
         st.write('3. URL・地域名を入力して下さい')
     st.write('----------------------------------------------')
@@ -224,15 +237,15 @@ if st.button('適用'):
         except Exception as f:
             error_message = traceback.print_exc()
             data = {
-            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生", "icon_emoji": "💥"}'
+            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生(eroorcode:f)", "icon_emoji": "💥"}'
             }
-            response = requests.post('https://hooks.slack.com/services/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', data=data)
+            response = requests.post(hook_url, data=data)
         st.write(selected_name_4 + 'のダウンロードはこちら↓') 
         st.markdown(filedownload(df4), unsafe_allow_html=True)
         data_1 = {
             'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "終了", "icon_emoji": "✅"}'
             }
-        response = requests.post('https://hooks.slack.com/services/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', data=data_1)
+        response = requests.post(hook_url, data=data_1)
     else:
         st.write('4. URL・地域名を入力して下さい')
     st.write('----------------------------------------------')
@@ -243,15 +256,15 @@ if st.button('適用'):
         except Exception as f:
             error_message = traceback.print_exc()
             data = {
-            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生", "icon_emoji": "💥"}'
+            'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "エラー発生(eroorcode:f)", "icon_emoji": "💥"}'
             }
-            response = requests.post('https://hooks.slack.com/services/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', data=data)
+            response = requests.post(hook_url, data=data)
         st.write(selected_name_5 + 'のダウンロードはこちら↓') 
         st.markdown(filedownload(df5), unsafe_allow_html=True)
         data_1 = {
             'payload': '{"channel": "#fdm-market-research-scraping", "username": "webhookbot", "text": "終了", "icon_emoji": "✅"}'
             }
-        response = requests.post('https://hooks.slack.com/services/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', data=data_1)
+        response = requests.post(hook_url, data=data_1)
     else:
         st.write('5. URL・地域名を入力して下さい')
 else:
