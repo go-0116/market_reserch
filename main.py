@@ -27,11 +27,9 @@ def scraping(URL):
     
     urls = []
     names = []
-    i = 17
+    i = 21
     url_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
     name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'     
-    #//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[17]/div/a/h3
-    #//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[5]/div/a
     try:
         for a in range(10):
             browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
@@ -40,7 +38,7 @@ def scraping(URL):
     except TimeoutException:
         print('a')
     try:
-        while i < 810 :#i=11から800個がmax
+        while i < 820 :#i=21から800個がmax
             url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path)))
             urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
             print(url_element.find_element_by_tag_name("a").get_attribute("href"))
@@ -61,53 +59,56 @@ def scraping(URL):
     df['NAME'] = names
     
     URL = df['URL'].to_list()
-    review_count = []
-    review_rate = []
+    review_counts = []
+    review_rates = []
+
+    def is_number(text):
+        if not text:
+            return False
+
+        if text.isdecimal():
+            return True
+        else:
+            try:
+                float(text)
+                return True
+            except ValueError:
+                return False
 
     for a in URL:
         browser.get(a)
-        try:
-            review_rate_element = WebDriverWait(browser, 10).until(EC.presence_of_all_elements_located(Recommendation_for_you.reviewrate_delivery_fee))
-            review_counts_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_delivery_fee))
-            review_counts_1 = review_counts_element.text.replace('(','')
-            review_counts_2 = review_counts_1.replace(')','')
-            judge =1
-        except TimeoutException:
-            judge =2
-        
-        if judge ==2:
+        sleep(5)
+        for review_xpath in Recommendation_for_you.top_review_xpath:
+            count = 3
             try:
-                review_rate_element = WebDriverWait(browser, 5).until(EC.presence_of_all_elements_located(Recommendation_for_you.reviewrate_km))
-                review_counts_element = WebDriverWait(browser, 5).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_km))
-                review_counts_1 = review_counts_element.text.replace('(','')
-                review_counts_2 = review_counts_1.replace(')','')
-                judge =1
-            except TimeoutException:
-                judge =2
-        
-        if judge ==2:
-            try:
-                review_rate_element = WebDriverWait(browser, 5).until(EC.presence_of_all_elements_located(Recommendation_for_you.reviewrate_normal))
-                review_counts_element = WebDriverWait(browser, 5).until(EC.presence_of_element_located(Recommendation_for_you.reviewcounts_noraml))
-                review_counts_1 = review_counts_element.text.replace('(','')
-                review_counts_2 = review_counts_1.replace(')','')
-                judge =1
-            except TimeoutException:
-                judge =2
-
-        if judge == 1 :
-            review_rate_2 = review_rate_element[0].text
-            review_rate.append(review_rate_2)
-            review_count.append(review_counts_2)
-            print(review_rate_2)
-            print(review_counts_2)
-        else:
-            review_rate.append('0')
-            review_count.append('0')
+                rate_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
+                for b in range(3):
+                    if is_number(rate_element.text):
+                        count += 2 
+                        count_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
+                        judge = 1
+                        break
+                    else:
+                        count += 2
+                        rate_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
+                break
+            except Exception as t:
+                judge = 2
+                
+        if judge == 1 :    
+            review_rate=rate_element.text
+            print(review_rate)          
+            review_count = count_element.text.replace("(", "").replace(")", "")
+            print(review_count)
+            review_rates.append(review_rate)
+            review_counts.append(review_count)
+        else :
+            review_rates.append(0)
+            review_counts.append(0)
             print('nothing')
 
-    df['Revie_rate'] = review_rate
-    df['Review_count'] = review_count
+    df['Revie_rate'] = review_rates
+    df['Review_count'] = review_counts
 
     df_rm = df.index[df.NAME.astype(str).str.contains(
     "マクドナルド|モスバーガー|バーガーキング|ウェンディーズ|ロッテリア|フレッシュネスバーガー|ファーストキッチン|ケンタッキー|吉野家|松屋|すき家|なか卯|ガスト|デニーズ|ロイヤルホスト|ローソン|ほっともっと|ココス|スターバックス|幸楽苑|スシロー|ピザハット|ドミノ・ピザ|ピザーラ|ほっかほっか亭|ジョナサン|サブウェイ|いきなりステーキ|丼丸|大漁丼家|魚丼|てんや",na=False
