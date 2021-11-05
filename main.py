@@ -1,22 +1,20 @@
-from logging import exception
-from pandas.core.frame import DataFrame
+from selenium.webdriver.support.expected_conditions import number_of_windows_to_be
+from pages.home_page import home_page
+from pages.restaurant_page import restaurant_page
 from selenium import webdriver
 from selenium.webdriver import Chrome
-from time import sleep
-from selenium.common.exceptions import NoSuchElementException, TimeoutException
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.wait import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options
+import chromedriver_binary
 import pandas as pd
+import json
+import requests
+from time import sleep
 import streamlit as st
 import base64
 import chromedriver_binary
 import requests
 import traceback
-from locator import Recommendation_for_you
 import json
-
 
 hook_url="https://hooks.slack.com/services/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"
 
@@ -24,109 +22,63 @@ chrome_options = Options()
 #chrome_options.add_argument("--headless", )
 #chrome_options.add_argument("--no-sandbox")
 
-def scraping(URL):
-    browser = webdriver.Chrome(options=chrome_options)
-    url = URL
-    browser.get(url)
-    
+browser = webdriver.Chrome(options=chrome_options)
+
+def market_reserch(home_url):
+    market = home_page(browser)
+    market.browser.get(home_url)
+    market.show_more()
+    count = 1
+    count += market.number_of_first_recommendation(count)
+    print(count)
+    count += market.find_category(count)
+    print(count)
+    count += market.number_of_first_recommendation(count) #first_recommendationの間にcategoryがあるため二回行っている
+    print(count)
+    number_of_restaurant = market.number_of_restaurant('//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div')
+ 
     urls = []
     names = []
-    i = 21
-    url_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
-    name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'     
-    try:
-        for a in range(10):
-            browser.execute_script("window.scrollTo(0, document.body.scrollHeight);")
-            show_more_element = WebDriverWait(browser, 5).until(EC.presence_of_element_located(Recommendation_for_you.show_more))
-            show_more_element.click() #さらに表示クリック
-    except TimeoutException:
-        print('a')
-    try:
-        while i < 820 :#i=21から800個がmax
-            url_element = WebDriverWait(browser, 10).until(EC.presence_of_element_located((By.XPATH,url_path)))
-            urls.append(url_element.find_element_by_tag_name("a").get_attribute("href"))
-            print(url_element.find_element_by_tag_name("a").get_attribute("href"))
-            name_element = browser.find_element_by_xpath(name_path).text
-            names.append(name_element)
-            print(name_element)
-            i += 1
-            url_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div'
-            name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(i) + ']/div/a/h3'
-    except Exception as e:
-        print('e')
+
+    
+    while count <= number_of_restaurant:
+        url_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(count) + ']/div'
+        name_path = '//*[@id="main-content"]/div/div[3]/div[2]/div/div[2]/div[' + str(count) + ']/div/a/h3' 
+        print(market.get_url(url_path))
+        print(market.get_name(name_path))
+        urls.append(market.get_url(url_path))
+        names.append(market.get_name(name_path))
+        count += 1
     
     if 'https://www.ubereats.com/jp/taco-bout-awkward' in urls :
         urls.remove('https://www.ubereats.com/jp/taco-bout-awkward')
-        
+
     df = pd.DataFrame(index=[],columns=[])
     df['URL'] = urls
     df['NAME'] = names
-    
+
     URL = df['URL'].to_list()
     review_counts = []
     review_rates = []
 
-    def is_number(text):
-        if not text:
-            return False
+    hook_url="https://hooks.slack.com/services/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"
 
-        if text.isdecimal():
-            return True
-        else:
-            try:
-                float(text)
-                return True
-            except ValueError:
-                return False
-
+    Restaurants = restaurant_page(browser)
     for a in URL:
-        browser.get(a)
+        Restaurants.browser.get(a)
         sleep(5)
-        for review_xpath in Recommendation_for_you.top_review_xpath:
-            count = 1
-            try:
-                rate_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
-                for b in range(4):
-                    if is_number(rate_element.text):
-                        count += 2 
-                        count_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
-                        judge = 1
-                        break
-                    else:
-                        count += 2
-                        rate_element = browser.find_element_by_xpath(review_xpath+"/div["+str(count)+"]")
-                break
-            except Exception as t:
-                judge = 2
-                
-        if judge == 1 :    
-            review_rate=rate_element.text
-            print(review_rate)          
-            review_count = count_element.text.replace("(", "").replace(")", "")
-            print(review_count)
-            review_rates.append(review_rate)
-            review_counts.append(review_count)
-        else :
-            review_rates.append(0)
-            review_counts.append(0)
-            print('nothing')
+        review_rate, review_count = Restaurants.get_review_rate_and_count()
+        
+        review_rates.append(review_rate)
+        review_counts.append(review_count)
+
     
-    percentage_0 = review_rates.count(0) / len(review_rates)
-    if percentage_0 > 0.5:
-        data=json.dumps({
-            "text":"0が50％以上",
-            "icon_emoji": "💥",
-            "username": "webhookbot",
-            "channel": "#fdm-market-research-scraping"
-            })
-        response = requests.post(hook_url, data=data)
+    Restaurants.check_percentage_of_0(hook_url, "#fdm-market-research-scraping")
+
     df['Revie_rate'] = review_rates
     df['Review_count'] = review_counts
 
-    df_rm = df.index[df.NAME.astype(str).str.contains(
-    "マクドナルド|モスバーガー|バーガーキング|ウェンディーズ|ロッテリア|フレッシュネスバーガー|ファーストキッチン|ケンタッキー|吉野家|松屋|すき家|なか卯|ガスト|デニーズ|ロイヤルホスト|ローソン|ほっともっと|ココス|スターバックス|幸楽苑|スシロー|ピザハット|ドミノ・ピザ|ピザーラ|ほっかほっか亭|ジョナサン|サブウェイ|いきなりステーキ|丼丸|大漁丼家|魚丼|てんや",na=False
-    )]
-    df = df.drop(df_rm)
+    df = Restaurants.remove_chain_store(df)
     return df
 
 def filedownload(df):
@@ -183,7 +135,7 @@ if st.button('適用'):
     if len (selected_url_1 ) > 0 or len(selected_name_1) > 0:
         try :
             df1 = pd.DataFrame()
-            df1 = scraping(selected_url_1)
+            df1 = market_reserch(selected_url_1)
         except Exception as f:
             error_message = traceback.format_exc()
             data=json.dumps({
@@ -207,7 +159,7 @@ if st.button('適用'):
     if len (selected_url_2 ) > 0 or len(selected_name_2) > 0:
         try :
             df2 = pd.DataFrame()
-            df2 = scraping(selected_url_2)
+            df2 = market_reserch(selected_url_2)
         except Exception as f:
             error_message = traceback.format_exc()
             data=json.dumps({
@@ -229,7 +181,7 @@ if st.button('適用'):
     if len (selected_url_3 ) > 0 or len(selected_name_3) > 0:
         try :
             df3 = pd.DataFrame()
-            df3 = scraping(selected_url_3)
+            df3 = market_reserch(selected_url_3)
         except Exception as f:
             error_message = traceback.format_exc()
             data=json.dumps({
@@ -251,7 +203,7 @@ if st.button('適用'):
     if len (selected_url_4 ) > 0 or len(selected_name_4) > 0:
         try :
             df4 = pd.DataFrame()
-            df4 = scraping(selected_url_4)
+            df4 = market_reserch(selected_url_4)
         except Exception as f:
             error_message = traceback.format_exc()
             data=json.dumps({
@@ -273,7 +225,7 @@ if st.button('適用'):
     if len (selected_url_5 ) > 0 or len(selected_name_5) > 0:
         try :
             df5 = pd.DataFrame()
-            df5 = scraping(selected_url_5)
+            df5 = market_reserch(selected_url_5)
         except Exception as f:
             error_message = traceback.format_exc()
             data=json.dumps({
